@@ -304,6 +304,8 @@ MonoBehaviour:
   Protag: {fileID: 2325302409136178039, guid: 8f28e457d3c307144883f31990891e07, type: 3}
   Camera: {fileID: 519420028}
   Antag: {fileID: 4003008805600402502, guid: 60d3d7e9a54343f4b9796f9b0e763e07, type: 3}
+  DamageTextPF: {fileID: 1988214643723769365, guid: ae143f7ced6b5cc4886ec5f218535633,
+    type: 3}
   EnergyText: {fileID: 163244731}
   HealthText: {fileID: 1441607375}
 --- !u!4 &730035628

@@ -16,10 +16,12 @@ public class Map : MonoBehaviour
     //EnemyStuff
 
     //GameObjects
+    public static Map Instance;
     public GameObject Tile;
     public GameObject Protag;
     public GameObject Camera;
     public GameObject Antag;
+    public GameObject DamageTextPF;
     public Text EnergyText;
     public Text HealthText;
 
@@ -29,6 +31,7 @@ public class Map : MonoBehaviour
     
     void Start()
     {
+        Instance = this;
         Enemies = new List<GameObject>();
         MakeMap();
         PlayerEnergyMax = 2;
@@ -37,7 +40,6 @@ public class Map : MonoBehaviour
 
         EnergyText.text = PlayerEnergy.ToString() + "/" + PlayerEnergyMax.ToString();
         HealthText.text = Player.GetComponent<Alive>().health + "/" + Player.GetComponent<Alive>().maxHealth;
-
     }
 
     void Update()
@@ -156,6 +158,7 @@ public class Map : MonoBehaviour
     void DealDamage(GameObject target, int damage)
     {
         target.GetComponent<Alive>().health -= damage;
+        DamageText.Create(target.GetComponent<Alive>().location, damage, target.name == "Player");
         Debug.Log(target.name + " took " + damage + " damage!");
         if (target.GetComponent<Alive>().health <= 0)
         {

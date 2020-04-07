@@ -38,14 +38,18 @@ public class Alive : MonoBehaviour
     //&& Vector3Int.Distance(location, Player.GetComponent<Alive>().location) < Player.GetComponent<Alive>().range
     void OnMouseOver()
     {
-        if(Map.IsInRange(Player, gameObject))
-            gameObject.GetComponent<SpriteRenderer>().color = InRangeColor;
-        else
-            gameObject.GetComponent<SpriteRenderer>().color = OutOfRangeColor;
-        if (Input.GetMouseButtonDown(0) && gameObject.name != "Player")
+        if(gameObject.name != "Player")
         {
-            Map.PlayerTryAttack(gameObject);
+            if (Map.IsInRange(Player, gameObject))
+                gameObject.GetComponent<SpriteRenderer>().color = InRangeColor;
+            else
+                gameObject.GetComponent<SpriteRenderer>().color = OutOfRangeColor;
+            if (Input.GetMouseButtonDown(0))
+            {
+                Map.PlayerTryAttack(gameObject);
+            }
         }
+
     }
     private void OnMouseExit()
     {
