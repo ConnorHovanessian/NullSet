@@ -8,17 +8,21 @@ public class Map : MonoBehaviour
     //Map Stuff
     //For Matrix: 0 represents no ground, 1 represents open ground, 2 represents occupied ground
     public int[][] Matrix;
+    //LivingMatrix
+    public GameObject[][] LivingMatrix;
     private int Maxx;
     private int Maxy;
     //Player Stuff
     private int PlayerEnergyMax;
     private int PlayerEnergy;
+    private bool InCombat;
     //EnemyStuff
 
     //GameObjects
     public static Map Instance;
     public GameObject Tile;
     public GameObject Protag;
+    public GameObject Villager;
     public GameObject Camera;
     public GameObject Antag;
     public GameObject DamageTextPF;
@@ -26,6 +30,7 @@ public class Map : MonoBehaviour
     public Text HealthText;
 
     private GameObject Player;
+    private List<GameObject> Friendlies;
     private List<GameObject> Enemies;
 
     
@@ -33,7 +38,9 @@ public class Map : MonoBehaviour
     {
         Instance = this;
         Enemies = new List<GameObject>();
+        Friendlies = new List<GameObject>();
         MakeMap();
+        InCombat = Enemies.Count > 0;
         PlayerEnergyMax = 2;
         PlayerEnergy = PlayerEnergyMax;
         AssignPlayerStats(100, 100, 4, 10);
@@ -59,30 +66,49 @@ public class Map : MonoBehaviour
         Player.GetComponent<Alive>().range = range;
         Player.GetComponent<Alive>().guns = guns;
     }
-    
 
     void PlayerMove()
     {
         if (Input.GetKeyDown(KeyCode.UpArrow))
             if (PlayerEnergy > 0 && MoveLiving(Player, new Vector3Int(0, 1, 0)))
-                SpendEnergy(1); 
+                SpendEnergy(1);
+            else TryTalking(new Vector3Int(0, 1, 0));
         if (Input.GetKeyDown(KeyCode.DownArrow))
             if(PlayerEnergy > 0 && MoveLiving(Player, new Vector3Int(0, -1, 0)))
                 SpendEnergy(1);
+            else TryTalking(new Vector3Int(0, -1, 0));
         if (Input.GetKeyDown(KeyCode.LeftArrow))
             if (PlayerEnergy > 0 && MoveLiving(Player, new Vector3Int(-1, 0, 0)))
                 SpendEnergy(1);
+            else TryTalking(new Vector3Int(-1, 0, 0));
         if (Input.GetKeyDown(KeyCode.RightArrow))
             if (PlayerEnergy > 0 && MoveLiving(Player, new Vector3Int(1, 0, 0)))
                 SpendEnergy(1);
-        
+            else TryTalking(new Vector3Int(1, 0, 0));
+
         Vector3 cameraLoc = new Vector3(Player.GetComponent<Alive>().location.x, Player.GetComponent<Alive>().location.y, -10);
         Player.transform.position = Player.GetComponent<Alive>().location;
         Camera.transform.position = cameraLoc;
     }
 
+    void TryTalking(Vector3Int movement)
+    {
+        Vector3Int loc = Player.GetComponent<Alive>().location;
+
+        Vector3Int oldSpot = Player.GetComponent<Alive>().location;
+        Vector3Int newSpot = oldSpot + movement;
+
+        if (newSpot.x >= 0 && newSpot.y >= 0 && newSpot.x < Maxx && newSpot.y < Maxy && LivingMatrix[newSpot.x][newSpot.y].GetComponent<Talkative>() != null)
+        {
+            Talkative talker = LivingMatrix[newSpot.x][newSpot.y].GetComponent<Talkative>();
+            Debug.Log(talker.Greeting);
+        }
+
+    }
+
     bool SpendEnergy(int n)
     {
+        if (!InCombat) return true;
         if (n > PlayerEnergy) return false; //Not enough energy to do action
         else PlayerEnergy -= n;
         EnergyText.text = PlayerEnergy.ToString() + "/" + PlayerEnergyMax.ToString();
@@ -91,12 +117,18 @@ public class Map : MonoBehaviour
 
     void EndTurn()
     {
+        if (Enemies.Count <= 0) ExitCombat();
         MoveEnemies();
         PlayerEnergy = PlayerEnergyMax;
         EnergyText.text = PlayerEnergy.ToString() + "/" + PlayerEnergyMax.ToString();
         HealthText.text = Player.GetComponent<Alive>().health + "/" + Player.GetComponent<Alive>().maxHealth;
     }
 
+    void ExitCombat()
+    {
+        PlayerEnergy = PlayerEnergyMax;
+        InCombat = false;
+    }
     void MoveEnemies()
     {
         foreach(GameObject enemy in Enemies){
@@ -183,10 +215,12 @@ public class Map : MonoBehaviour
         Maxx = 8;
         Maxy = 8;
         Matrix = new int[Maxx][];
+        LivingMatrix = new GameObject[Maxx][];
         for (int i = 0; i < Maxx; i++)
         {
             Matrix[i] = new int[Maxy];
-            for(int j = 0; j<=i; j++)
+            LivingMatrix[i] = new GameObject[Maxy];
+            for (int j = 0; j<=i; j++)
             {
                 Matrix[i][j] = 1;
                 Vector3 location = new Vector3(i, j, 0);
@@ -194,13 +228,28 @@ public class Map : MonoBehaviour
             }
         }
         Vector3Int PlayerLocation = new Vector3Int(0, 0, 0);
+        Vector3Int VillagerLocation = new Vector3Int(1, 1, 0);
         Vector3Int EnemyLocation = new Vector3Int(5, 5, 0);
         Vector3Int EnemyLocation1 = new Vector3Int(4, 4, 0);
         Vector3Int EnemyLocation2 = new Vector3Int(6, 4, 0);
         Player = SpawnLiving(Protag, "Player", PlayerLocation);
+        Friendlies.Add(SpawnLiving(Villager, "Villager", VillagerLocation, "Hello! Thanks for saving me from those monsters!"));
         Enemies.Add(SpawnLiving(Antag, "Enemy", EnemyLocation));
         Enemies.Add(SpawnLiving(Antag, "Enemy", EnemyLocation1));
         Enemies.Add(SpawnLiving(Antag, "Enemy", EnemyLocation2));
+        PopulateLivingMatrix(Friendlies);
+    }
+
+    void PopulateLivingMatrix(List<GameObject> friendlies)
+    {
+        foreach (GameObject friendly in friendlies)
+        {
+            if (friendly != null)
+            {
+                Vector3Int position = Vector3Int.FloorToInt(friendly.transform.position);
+                LivingMatrix[position.x][position.y] = friendly;
+            }
+        }
     }
 
     GameObject SpawnLiving(GameObject toSpawn, string name, Vector3Int location)
@@ -208,6 +257,17 @@ public class Map : MonoBehaviour
         GameObject spawned = Instantiate(toSpawn, location, Quaternion.identity);
         spawned.name = name;
         spawned.GetComponent<Alive>().location = location;
+        Matrix[location.x][location.y] = 2;
+        return spawned;
+    }
+
+    //Spawn living with a greeting
+    GameObject SpawnLiving(GameObject toSpawn, string name, Vector3Int location, string greeting)
+    {
+        GameObject spawned = Instantiate(toSpawn, location, Quaternion.identity);
+        spawned.name = name;
+        spawned.GetComponent<Alive>().location = location;
+        spawned.GetComponent<Talkative>().Greeting = greeting;
         Matrix[location.x][location.y] = 2;
         return spawned;
     }
@@ -230,6 +290,7 @@ public class Map : MonoBehaviour
 
     public void KillLiving(GameObject toKill)
     {
+        if (Enemies.Contains(toKill)) Enemies.Remove(toKill);
         Vector3Int loc = toKill.GetComponent<Alive>().location;
         Matrix[loc.x][loc.y] = 1;
         Destroy(toKill);
