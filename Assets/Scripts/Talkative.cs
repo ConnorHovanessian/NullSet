@@ -4,6 +4,5 @@ using UnityEngine;
 
 public class Talkative : MonoBehaviour
 {
-    public string Greeting;
-    public string[] Lines;
+    public DialogNode Dialog;
 }
