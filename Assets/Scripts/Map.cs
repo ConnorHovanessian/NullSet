@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using UnityEngine.EventSystems;
 
@@ -19,7 +20,8 @@ public class Map : MonoBehaviour
     private int PlayerEnergy;
     private bool InCombat;
     //EnemyStuff
-
+    //Item Stuff
+    public Item TestItem;
     //GameObjects
     public static Map Instance;
     public GameObject Tile;
@@ -47,6 +49,7 @@ public class Map : MonoBehaviour
         PlayerEnergy = PlayerEnergyMax;
         AssignPlayerStats(100, 100, 4, 10);
 
+        Inventory.instance.Remove(null);
         EnergyText.text = PlayerEnergy.ToString() + "/" + PlayerEnergyMax.ToString();
         HealthText.text = Player.GetComponent<Alive>().health + "/" + Player.GetComponent<Alive>().maxHealth;
     }
@@ -104,6 +107,7 @@ public class Map : MonoBehaviour
         {
             Talkative talker = LivingMatrix[newSpot.x][newSpot.y].GetComponent<Talkative>();
             DialogController.Instance.Talk(talker);
+            Inventory.instance.AddItem(TestItem);
         }
 
     }
